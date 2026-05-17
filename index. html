@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon:#00f5ff;--neon2:#7b2fff;--neon3:#ff2f7b;
+    --bg:#05050f;--card:rgba(255,255,255,0.04);
+    --border:rgba(0,245,255,0.18);--text:#e0e8ff;--muted:rgba(224,232,255,0.45);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* GRID BG */
+  .grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,245,255,0.03)1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+
+  /* SPLASH */
+  #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+  .stars{position:absolute;inset:0;overflow:hidden;}
+  .star{position:absolute;width:2px;height:2px;background:white;border-radius:50%;animation:twinkle var(--d) infinite ease-in-out;opacity:0;}
+  @keyframes twinkle{0%,100%{opacity:0}50%{opacity:1}}
+  .scene{position:absolute;inset:0;perspective:800px;pointer-events:none;}
+  .hub-3d{position:absolute;width:80px;height:80px;transform-style:preserve-3d;animation:floatHub var(--fspeed) ease-in-out infinite alternate;}
+  .hub-face{position:absolute;width:80px;height:80px;border:2px solid var(--neon);background:rgba(0,245,255,0.05);box-shadow:0 0 20px rgba(0,245,255,0.3);display:flex;align-items:center;justify-content:center;font-size:28px;backdrop-filter:blur(4px);}
+  .hub-face.front{transform:translateZ(40px)}.hub-face.back{transform:rotateY(180deg) translateZ(40px);border-color:var(--neon2)}.hub-face.left{transform:rotateY(-90deg) translateZ(40px);border-color:var(--neon3)}.hub-face.right{transform:rotateY(90deg) translateZ(40px)}.hub-face.top{transform:rotateX(90deg) translateZ(40px);border-color:var(--neon2)}.hub-face.bottom{transform:rotateX(-90deg) translateZ(40px);border-color:var(--neon3)}
+  @keyframes floatHub{from{transform:translateY(0px) rotateX(20deg) rotateY(0deg)}to{transform:translateY(-30px) rotateX(30deg) rotateY(360deg)}}
+  .splash-center{position:relative;z-index:10;text-align:center;}
+  .splash-ring{width:180px;height:180px;border-radius:50%;border:2px solid transparent;background:linear-gradient(var(--bg),var(--bg)) padding-box,linear-gradient(135deg,var(--neon),var(--neon2),var(--neon3)) border-box;display:flex;align-items:center;justify-content:center;margin:0 auto 32px;animation:ringPulse 2s ease-in-out infinite;box-shadow:0 0 60px rgba(0,245,255,0.2);position:relative;}
+  @keyframes ringPulse{0%,100%{box-shadow:0 0 40px rgba(0,245,255,0.2)}50%{box-shadow:0 0 80px rgba(0,245,255,0.4)}}
+  .splash-ring::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(0,245,255,0.2);animation:rotate 4s linear infinite;}
+  .splash-ring::after{content:'';position:absolute;inset:-20px;border-radius:50%;border:1px dashed rgba(123,47,255,0.3);animation:rotate 8s linear infinite reverse;}
+  @keyframes rotate{to{transform:rotate(360deg)}}
+  .splash-icon{font-size:64px;filter:drop-shadow(0 0 20px var(--neon));}
+  .splash-title{font-family:'Orbitron',monospace;font-size:clamp(28px,6vw,52px);font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,var(--neon) 0%,var(--neon2) 50%,var(--neon3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:titleGlow 2s ease-in-out infinite alternate;margin-bottom:8px;}
+  @keyframes titleGlow{from{filter:drop-shadow(0 0 10px rgba(0,245,255,0.5))}to{filter:drop-shadow(0 0 30px rgba(0,245,255,0.9))}}
+  .splash-sub{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:48px;}
+  .progress-wrap{width:260px;margin:0 auto;}
+  .progress-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:10px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon2));border-radius:2px;animation:fillBar 5s linear forwards;box-shadow:0 0 10px var(--neon);}
+  @keyframes fillBar{from{width:0%}to{width:100%}}
+  .progress-text{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;}
+  .splash-footer{position:absolute;bottom:28px;left:0;right:0;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;}
+  .splash-footer span{color:var(--neon);}
+  .splash-out{animation:splashExit 0.8s ease-in-out forwards!important;}
+  @keyframes splashExit{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05);pointer-events:none}}
+
+  /* AUTH */
+  #authScreen{display:none;min-height:100vh;align-items:center;justify-content:center;position:relative;z-index:10;padding:20px;}
+  #authScreen.active{display:flex;}
+  .auth-card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:48px 40px;width:100%;max-width:420px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(0,245,255,0.08);animation:cardIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;}
+  @keyframes cardIn{from{opacity:0;transform:translateY(40px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .auth-logo{text-align:center;margin-bottom:32px;}
+  .auth-logo-icon{font-size:40px;display:block;margin-bottom:8px;filter:drop-shadow(0 0 15px var(--neon));}
+  .auth-logo-name{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .auth-tabs{display:flex;background:rgba(255,255,255,0.05);border-radius:12px;padding:4px;margin-bottom:32px;}
+  .auth-tab{flex:1;padding:10px;border:none;background:none;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;transition:all 0.3s;letter-spacing:1px;}
+  .auth-tab.active{background:linear-gradient(135deg,rgba(0,245,255,0.15),rgba(123,47,255,0.15));color:var(--neon);}
+  .auth-form{display:none;flex-direction:column;gap:16px;}
+  .auth-form.active{display:flex;}
+  .input-group{position:relative;}
+  .input-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .input-group input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;transition:all 0.3s;outline:none;}
+  .input-group input:focus{border-color:var(--neon);box-shadow:0 0 20px rgba(0,245,255,0.15);}
+  .btn-primary{padding:16px;border:none;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,var(--neon),var(--neon2));color:#000;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;transition:all 0.3s;box-shadow:0 4px 20px rgba(0,245,255,0.3);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,245,255,0.4);}
+  .btn-primary:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;letter-spacing:1px;}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.1);}
+  .btn-google{padding:14px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:12px;cursor:pointer;background:rgba(255,255,255,0.05);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s;}
+  .btn-google:hover{background:rgba(255,255,255,0.1);}
+  .google-icon{width:20px;height:20px;background:linear-gradient(135deg,#ea4335 25%,#fbbc05 25% 50%,#34a853 50% 75%,#4285f4 75%);border-radius:50%;}
+  .auth-error{background:rgba(255,47,123,0.1);border:1px solid rgba(255,47,123,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--neon3);display:none;}
+  .auth-error.show{display:block;}
+
+  /* APP */
+  #app{display:none;min-height:100vh;position:relative;z-index:10;}
+  #app.active{display:block;}
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(5,5,15,0.9);border-top:1px solid var(--border);backdrop-filter:blur(20px);display:flex;z-index:100;}
+  .nav-item{flex:1;padding:12px 8px 10px;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;transition:all 0.3s;}
+  .nav-item.active{color:var(--neon);}
+  .nav-item .nav-icon{font-size:22px;}
+  .nav-item.active .nav-icon{filter:drop-shadow(0 0 8px var(--neon));}
+  .page{display:none;padding:28px 20px 90px;min-height:100vh;}
+  .page.active{display:block;animation:pageIn 0.4s ease both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .page-sub{font-size:14px;color:var(--muted);margin-top:4px;}
+  .greeting-wrap{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+  .greeting-text{font-size:14px;color:var(--muted);}
+  .greeting-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--text);}
+  .greeting-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--neon),var(--neon2));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px rgba(0,245,255,0.3);cursor:pointer;}
+  .stats-row{display:flex;gap:12px;margin-bottom:24px;}
+  .stat-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 12px;text-align:center;}
+  .stat-num{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--neon);display:block;}
+  .stat-label{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;}
+  .hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
+  .hub-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 16px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;}
+  .hub-card:hover{transform:translateY(-4px);border-color:rgba(0,245,255,0.4);}
+  .hub-card-icon{font-size:32px;margin-bottom:10px;display:block;}
+  .hub-card-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text);margin-bottom:4px;}
+  .hub-card-time{font-size:11px;color:var(--muted);letter-spacing:1px;}
+  .hub-card-del{position:absolute;top:10px;right:10px;background:rgba(255,47,123,0.15);border:none;border-radius:6px;color:var(--neon3);font-size:14px;cursor:pointer;padding:4px 7px;opacity:0;transition:opacity 0.2s;}
+  .hub-card:hover .hub-card-del{opacity:1;}
+  .add-hub-btn{width:100%;padding:18px;border:1px dashed rgba(0,245,255,0.3);border-radius:16px;cursor:pointer;background:rgba(0,245,255,0.03);color:var(--neon);font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s;margin-bottom:24px;}
+  .add-hub-btn:hover{background:rgba(0,245,255,0.08);border-style:solid;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:flex-end;justify-content:center;padding:20px;}
+  .modal-overlay.active{display:flex;}
+  .modal{background:#0a0a1a;border:1px solid var(--border);border-radius:24px 24px 0 0;padding:32px 24px 40px;width:100%;max-width:500px;animation:modalUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;position:relative;}
+  @keyframes modalUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;letter-spacing:2px;color:var(--neon);margin-bottom:24px;text-align:center;}
+  .icon-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .icon-opt{width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+  .icon-opt:hover,.icon-opt.selected{border-color:var(--neon);background:rgba(0,245,255,0.1);}
+
+  /* CALENDAR */
+  .calendar-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;}
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .cal-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:1px;color:var(--neon);}
+  .cal-nav{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;}
+  .cal-nav:hover{color:var(--neon);}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:8px;}
+  .cal-wd{text-align:center;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;padding:4px 0;}
+  .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-day{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all 0.2s;font-weight:600;}
+  .cal-day:hover{background:rgba(0,245,255,0.1);}
+  .cal-day.today{background:linear-gradient(135deg,var(--neon),var(--neon2));color:#000;font-weight:900;box-shadow:0 0 15px rgba(0,245,255,0.4);}
+  .cal-day.empty{opacity:0;pointer-events:none;}
+  .events-list{display:flex;flex-direction:column;gap:10px;}
+  .event-item{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--neon);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;}
+  .event-time{font-family:'Space Mono',monospace;font-size:11px;color:var(--neon);min-width:50px;}
+  .event-name{font-size:14px;font-weight:600;}
+
+  /* NOTIFS */
+  .notif-list{display:flex;flex-direction:column;gap:12px;}
+  .notif-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:flex-start;}
+  .notif-dot{width:10px;height:10px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);margin-top:4px;flex-shrink:0;}
+  .notif-dot.purple{background:var(--neon2);box-shadow:0 0 8px var(--neon2);}
+  .notif-dot.pink{background:var(--neon3);box-shadow:0 0 8px var(--neon3);}
+  .notif-body{flex:1;}
+  .notif-title{font-weight:700;font-size:15px;margin-bottom:4px;}
+  .notif-msg{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .notif-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,245,255,0.1);border:1px solid var(--neon);border-radius:100px;padding:12px 24px;color:var(--neon);font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1px;white-space:nowrap;opacity:0;transition:all 0.4s;z-index:300;backdrop-filter:blur(10px);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* LOADING SPINNER */
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,0.3);border-top-color:#000;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="stars" id="stars"></div>
+  <div class="scene" id="scene3d"></div>
+  <div class="splash-center">
+    <div class="splash-ring"><span class="splash-icon">⬡</span></div>
+    <h1 class="splash-title">HUB MASTER</h1>
+    <p class="splash-sub">Your command center awaits</p>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <p class="progress-text" id="loadingText">INITIALIZING...</p>
+    </div>
+  </div>
+  <div class="splash-footer">POWERED BY <span>HANADORA</span></div>
+</div>
+
+<!-- AUTH -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="auth-logo-icon">⬡</span>
+      <span class="auth-logo-name">HUB MASTER</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">LOG IN</button>
+      <button class="auth-tab" onclick="switchTab('signup')">SIGN UP</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+
+    <!-- Login -->
+    <div class="auth-form active" id="loginForm">
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••">
+      </div>
+      <button class="btn-primary" id="loginBtn" onclick="doLogin()">LOG IN</button>
+      <div class="divider">OR</div>
+      <button class="btn-google" onclick="showToast('🔗 Google auth — Firebase ku dar!')">
+        <div class="google-icon"></div>Continue with Google
+      </button>
+    </div>
+
+    <!-- Signup -->
+    <div class="auth-form" id="signupForm">
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" placeholder="Hanad Hassan">
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="signupPass" placeholder="Create strong password">
+      </div>
+      <button class="btn-primary" id="signupBtn" onclick="doSignup()">CREATE ACCOUNT</button>
+      <div class="divider">OR</div>
+      <button class="btn-google" onclick="showToast('🔗 Google auth — Firebase ku dar!')">
+        <div class="google-icon"></div>Continue with Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- HOME -->
+  <div class="page active" id="homePage">
+    <div class="greeting-wrap">
+      <div>
+        <div class="greeting-text">Good morning,</div>
+        <div class="greeting-name" id="userName">LOADING...</div>
+      </div>
+      <div class="greeting-avatar" onclick="logout()">🚪</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><span class="stat-num" id="hubCount">0</span><div class="stat-label">HUBS</div></div>
+      <div class="stat-card"><span class="stat-num" id="taskCount">0</span><div class="stat-label">TASKS</div></div>
+      <div class="stat-card"><span class="stat-num" id="notifCount">0</span><div class="stat-label">ALERTS</div></div>
+    </div>
+    <button class="add-hub-btn" onclick="openAddHub()">＋ ADD NEW HUB</button>
+    <div class="hub-grid" id="hubGrid"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="page" id="calendarPage">
+    <div class="page-header">
+      <div class="page-title">CALENDAR</div>
+      <div class="page-sub">Your schedule & reminders</div>
+    </div>
+    <div class="calendar-wrap">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="cal-nav" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <div class="cal-wd">S</div><div class="cal-wd">M</div><div class="cal-wd">T</div>
+        <div class="cal-wd">W</div><div class="cal-wd">T</div><div class="cal-wd">F</div><div class="cal-wd">S</div>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+    </div>
+    <div class="events-list" id="eventsList"></div>
+  </div>
+
+  <!-- NOTIFS -->
+  <div class="page" id="notifsPage">
+    <div class="page-header">
+      <div class="page-title">ALERTS</div>
+      <div class="page-sub">Hub reminders & updates</div>
+    </div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">⊞</span><span>HOME</span></button>
+    <button class="nav-item" onclick="showPage('calendar',this)"><span class="nav-icon">◫</span><span>CALENDAR</span></button>
+    <button class="nav-item" onclick="showPage('notifs',this)"><span class="nav-icon">◉</span><span>ALERTS</span></button>
+  </nav>
+</div>
+
+<!-- ADD HUB MODAL -->
+<div class="modal-overlay" id="addHubModal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">NEW HUB</div>
+    <div class="input-group" style="margin-bottom:16px">
+      <label>Hub Name</label>
+      <input type="text" id="hubNameInput" placeholder="e.g. Coding Projects">
+    </div>
+    <div class="input-group" style="margin-bottom:16px">
+      <label>Reminder Time</label>
+      <input type="time" id="hubTimeInput">
+    </div>
+    <div class="input-group" style="margin-bottom:16px">
+      <label>Choose Icon</label>
+      <div class="icon-picker" id="iconPicker"></div>
+    </div>
+    <button class="btn-primary" id="createHubBtn" onclick="addHub()">CREATE HUB</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───
+// Haddaad backend-ka localhost-ka ku socodsiso:
+const API = 'http://localhost:5000/api';
+// Haddaad Render/Railway deploy gareysay, URL-kaaga halkan geli:
+// const API = 'https://your-app.onrender.com/api';
+
+let TOKEN = localStorage.getItem('hm_token') || '';
+let currentUser = null;
+let notifs = [];
+let selectedIcon = '🚀';
+let calDate = new Date();
+
+// ─── API HELPER ───
+async function api(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {})
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(API + path, opts);
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  } catch(e) {
+    return { ok: false, data: { error: 'Server la xidhi kari waayo. Backend socodsii!' } };
+  }
+}
+
+// ─── STARS & 3D ───
+const starsEl = document.getElementById('stars');
+for(let i=0;i<120;i++){
+  const s=document.createElement('div'); s.className='star';
+  s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px`;
+  starsEl.appendChild(s);
+}
+const icons3d=['🚀','💡','🎯','⚡','💻','🌐','🔥','🎮'];
+const positions=[{top:'8%',left:'5%'},{top:'15%',right:'8%'},{top:'55%',left:'2%'},{top:'70%',right:'5%'},{top:'40%',left:'80%'},{top:'80%',left:'30%'},{top:'20%',left:'40%'},{top:'60%',left:'60%'}];
+const scene=document.getElementById('scene3d');
+positions.forEach((pos,i)=>{
+  const hub=document.createElement('div'); hub.className='hub-3d';
+  hub.style.cssText=Object.entries(pos).map(([k,v])=>`${k}:${v}`).join(';')+`;--fspeed:${4+Math.random()*4}s;animation-delay:${Math.random()*2}s;opacity:${0.2+Math.random()*0.4}`;
+  ['front','back','left','right','top','bottom'].forEach(f=>{
+    const face=document.createElement('div'); face.className=`hub-face ${f}`;
+    if(f==='front') face.textContent=icons3d[i%icons3d.length];
+    hub.appendChild(face);
+  });
+  scene.appendChild(hub);
+});
+
+// ─── LOADING TEXT ───
+const loadMsgs=['INITIALIZING...','CONNECTING SERVER...','LOADING HUBS...','SYNCING DATA...','LAUNCHING!'];
+let lIdx=0;
+const lt=setInterval(()=>{ lIdx++; if(lIdx<loadMsgs.length) document.getElementById('loadingText').textContent=loadMsgs[lIdx]; else clearInterval(lt); },1000);
+
+// ─── SPLASH ───
+setTimeout(async()=>{
+  const splash=document.getElementById('splash');
+  splash.classList.add('splash-out');
+  setTimeout(async()=>{
+    splash.style.display='none';
+    // Haddii token jiro, si toos u gal
+    if(TOKEN) {
+      const r = await api('/me');
+      if(r.ok) { currentUser = r.data.user; enterApp(); return; }
+      else { TOKEN=''; localStorage.removeItem('hm_token'); }
+    }
+    document.getElementById('authScreen').classList.add('active');
+  },800);
+},5000);
+
+// ─── AUTH ───
+function switchTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='login'&&i===0)||(tab==='signup'&&i===1)));
+  document.getElementById('loginForm').classList.toggle('active',tab==='login');
+  document.getElementById('signupForm').classList.toggle('active',tab==='signup');
+  document.getElementById('authError').classList.remove('show');
+}
+
+function showAuthError(msg){ const e=document.getElementById('authError'); e.textContent=msg; e.classList.add('show'); }
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass){ showAuthError('Email iyo password gali'); return; }
+  const btn=document.getElementById('loginBtn');
+  btn.innerHTML='<span class="spinner"></span>LOGGING IN...'; btn.disabled=true;
+  const r = await api('/login','POST',{email,password:pass});
+  btn.innerHTML='LOG IN'; btn.disabled=false;
+  if(r.ok){ TOKEN=r.data.token; localStorage.setItem('hm_token',TOKEN); currentUser=r.data.user; enterApp(); }
+  else showAuthError(r.data.error||'Khalad ayaa dhacay');
+}
+
+async function doSignup(){
+  const name=document.getElementById('signupName').value.trim();
+  const email=document.getElementById('signupEmail').value.trim();
+  const pass=document.getElementById('signupPass').value;
+  if(!name||!email||!pass){ showAuthError('Dhammaan meelaha buuxi'); return; }
+  const btn=document.getElementById('signupBtn');
+  btn.innerHTML='<span class="spinner"></span>CREATING...'; btn.disabled=true;
+  const r = await api('/signup','POST',{name,email,password:pass});
+  btn.innerHTML='CREATE ACCOUNT'; btn.disabled=false;
+  if(r.ok){ TOKEN=r.data.token; localStorage.setItem('hm_token',TOKEN); currentUser=r.data.user; enterApp(); }
+  else showAuthError(r.data.error||'Khalad ayaa dhacay');
+}
+
+function logout(){
+  TOKEN=''; localStorage.removeItem('hm_token'); currentUser=null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authScreen').classList.add('active');
+  showToast('👋 Logged out');
+}
+
+// ─── APP ───
+async function enterApp(){
+  document.getElementById('authScreen').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  document.getElementById('userName').textContent = (currentUser?.name||'USER').toUpperCase();
+  await loadHubs();
+  renderCalendar();
+  renderNotifs();
+}
+
+// ─── HUBS ───
+async function loadHubs(){
+  const r = await api('/hubs');
+  if(!r.ok){ showToast('❌ Hubs load kari waayo'); return; }
+  const hubs = r.data.hubs;
+  document.getElementById('hubCount').textContent = hubs.length;
+  document.getElementById('taskCount').textContent = hubs.length * 2;
+  document.getElementById('hubGrid').innerHTML = hubs.length ? hubs.map(h=>`
+    <div class="hub-card">
+      <button class="hub-card-del" onclick="deleteHub(${h.id})">✕</button>
+      <span class="hub-card-icon">${h.icon}</span>
+      <div class="hub-card-name">${h.name}</div>
+      <div class="hub-card-time">⏰ ${h.time}</div>
+    </div>
+  `).join('') : '<p style="color:var(--muted);font-size:14px;padding:20px 0">Hub ma lihid. Samee mid cusub! 🚀</p>';
+  // Events calendar
+  document.getElementById('eventsList').innerHTML = hubs.map(h=>`
+    <div class="event-item"><span class="event-time">${h.time}</span><span class="event-name">${h.icon} ${h.name}</span></div>
+  `).join('') || '<p style="color:var(--muted)">Events ma jiraan</p>';
+}
+
+function setupIconPicker(){
+  const icons=['🚀','💡','🎯','🔥','💻','🎮','🎨','📱','🔐','🌐','📊','🎵','🛒','⚡','🧠'];
+  document.getElementById('iconPicker').innerHTML=icons.map(i=>`
+    <button class="icon-opt${i===selectedIcon?' selected':''}" onclick="selectIcon('${i}',this)">${i}</button>
+  `).join('');
+}
+function selectIcon(icon,btn){ selectedIcon=icon; document.querySelectorAll('.icon-opt').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+function openAddHub(){ document.getElementById('addHubModal').classList.add('active'); setupIconPicker(); }
+function closeModal(e){ if(e.target===document.getElementById('addHubModal')) document.getElementById('addHubModal').classList.remove('active'); }
+
+async function addHub(){
+  const name=document.getElementById('hubNameInput').value.trim();
+  const time=document.getElementById('hubTimeInput').value||'09:00';
+  if(!name){ showToast('⚠️ Hub magac gali'); return; }
+  const btn=document.getElementById('createHubBtn');
+  btn.innerHTML='<span class="spinner"></span>SAVING...'; btn.disabled=true;
+  const r = await api('/hubs','POST',{name:name.toUpperCase(),icon:selectedIcon,time});
+  btn.innerHTML='CREATE HUB'; btn.disabled=false;
+  if(r.ok){
+    document.getElementById('addHubModal').classList.remove('active');
+    document.getElementById('hubNameInput').value='';
+    document.getElementById('hubTimeInput').value='';
+    await loadHubs();
+    showToast(`✅ "${name.toUpperCase()}" hub la abuuray!`);
+    addLocalNotif('HUB CREATED',`${name.toUpperCase()} hub la daray`,'purple');
+    document.getElementById('notifCount').textContent=notifs.length;
+  } else showToast('❌ '+r.data.error);
+}
+
+async function deleteHub(id){
+  const r = await api('/hubs/'+id,'DELETE');
+  if(r.ok){ await loadHubs(); showToast('🗑️ Hub la tirtiray'); }
+  else showToast('❌ Tirtiri kari waayay');
+}
+
+// ─── CALENDAR ───
+function renderCalendar(){
+  const now=new Date(); const y=calDate.getFullYear(), m=calDate.getMonth();
+  const months=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  document.getElementById('calTitle').textContent=`${months[m]} ${y}`;
+  const first=new Date(y,m,1).getDay(); const days=new Date(y,m+1,0).getDate();
+  let html='';
+  for(let i=0;i<first;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const isToday=d===now.getDate()&&m===now.getMonth()&&y===now.getFullYear();
+    html+=`<div class="cal-day${isToday?' today':''}">${d}</div>`;
+  }
+  document.getElementById('calDays').innerHTML=html;
+}
+function changeMonth(dir){ calDate.setMonth(calDate.getMonth()+dir); renderCalendar(); }
+
+// ─── NOTIFS ───
+function addLocalNotif(title,msg,color='cyan'){ notifs.unshift({title,msg,color,time:'Just now'}); renderNotifs(); }
+function renderNotifs(){
+  document.getElementById('notifList').innerHTML = notifs.length ? notifs.map(n=>`
+    <div class="notif-item">
+      <div class="notif-dot ${n.color==='purple'?'purple':n.color==='pink'?'pink':''}"></div>
+      <div class="notif-body">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-msg">${n.msg}</div>
+        <div class="notif-time">${n.time}</div>
+      </div>
+    </div>
+  `).join('') : '<p style="color:var(--muted);font-size:14px">Notifications ma jiraan</p>';
+}
+
+// ─── PAGES ───
+function showPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(name+'Page').classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── TOAST ───
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+</script>
+</body>
+</html>
